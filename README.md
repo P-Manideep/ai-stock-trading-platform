@@ -234,7 +234,7 @@
 
 **- GitHub: \[@P-Manideep](https://github.com/P-Manideep)**
 
-**- LinkedIn: \[Add your LinkedIn]**
+**- LinkedIn: https://www.linkedin.com/in/manideep-pothkan
 
 
 
