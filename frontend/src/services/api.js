@@ -36,6 +36,7 @@ export const portfolioAPI = {
   buy: (data) => api.post('/portfolio/buy', data),
   sell: (data) => api.post('/portfolio/sell', data),
   getTransactions: () => api.get('/portfolio/transactions'),
+  getAnalytics: () => api.get('/portfolio/analytics'),
 }
 
 export const predictionAPI = {

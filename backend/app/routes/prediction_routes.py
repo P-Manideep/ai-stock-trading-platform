@@ -9,31 +9,30 @@ from ..services.ml_service import predict_stock_price
 
 router = APIRouter()
 
-@router.get("/{symbol}", response_model=StockPredictionResponse)
+@router.get("/{symbol}")
 def get_prediction(symbol: str, current_user: User = Depends(get_verified_user), db: Session = Depends(get_db)):
-    # Check if we have recent prediction (< 1 hour old)
-    recent_prediction = db.query(StockPrediction).filter(
+    recent = db.query(StockPrediction).filter(
         StockPrediction.symbol == symbol.upper(),
         StockPrediction.created_at > datetime.utcnow() - timedelta(hours=1)
     ).first()
     
-    if recent_prediction:
-        return StockPredictionResponse(
-            symbol=recent_prediction.symbol,
-            current_price=0,  # Will be fetched separately
-            predicted_price=recent_prediction.predicted_price,
-            confidence=recent_prediction.confidence,
-            trend=recent_prediction.trend,
-            prediction_date=recent_prediction.prediction_date
-        )
+    if recent:
+        return {
+            "symbol": recent.symbol,
+            "current_price": 0,
+            "predicted_price": recent.predicted_price,
+            "confidence": recent.confidence,
+            "trend": recent.trend,
+            "prediction_date": recent.prediction_date,
+            "technical_indicators": None,
+            "signal": None
+        }
     
-    # Generate new prediction
     prediction_data = predict_stock_price(symbol)
     
     if not prediction_data:
         raise HTTPException(status_code=404, detail="Unable to generate prediction")
     
-    # Save to database
     db_prediction = StockPrediction(
         symbol=symbol.upper(),
         prediction_date=prediction_data['prediction_date'],
@@ -51,7 +50,7 @@ def get_multiple_predictions(symbols: str, current_user: User = Depends(get_veri
     symbol_list = symbols.split(',')
     predictions = []
     
-    for symbol in symbol_list[:5]:  # Limit to 5 symbols
+    for symbol in symbol_list[:5]:
         try:
             pred = predict_stock_price(symbol.strip())
             if pred:
