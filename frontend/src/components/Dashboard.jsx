@@ -1,12 +1,47 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense, memo } from 'react'
 import { motion } from 'framer-motion'
 import { Toaster } from 'react-hot-toast'
 import { portfolioAPI, stockAPI } from '../services/api'
-import Portfolio from './Portfolio'
-import TradingPanel from './TradingPanel'
-import StockChart from './StockChart'
-import Predictions from './Predictions'
 import { TrendingUp, LogOut, Wallet, Activity, BarChart3 } from 'lucide-react'
+
+// Lazy load heavy components
+const Portfolio = lazy(() => import('./Portfolio'))
+const TradingPanel = lazy(() => import('./TradingPanel'))
+const StockChart = lazy(() => import('./StockChart'))
+const Predictions = lazy(() => import('./Predictions'))
+
+// Loading skeleton component
+const LoadingSkeleton = ({ height = "h-64" }) => (
+  <div className="card p-6">
+    <div className={`skeleton ${height} w-full rounded`}></div>
+  </div>
+)
+
+// Memoized trending stock button
+const TrendingStockButton = memo(({ stock, isSelected, onSelect, index }) => (
+  <motion.button
+    onClick={() => onSelect(stock.symbol)}
+    className={`w-full p-3 rounded-lg text-left transition ${
+      isSelected
+        ? 'bg-blue-500/20 border-2 border-blue-500'
+        : 'bg-[#0a0e27] hover:bg-[#2d3561] border border-[#2d3561]'
+    }`}
+    initial={{ opacity: 0, x: 20 }}
+    animate={{ opacity: 1, x: 0 }}
+    transition={{ delay: index * 0.05 }}
+  >
+    <div className="flex justify-between items-center">
+      <div>
+        <p className="font-bold text-white">{stock.symbol}</p>
+        <p className="text-sm text-gray-400">${stock.price?.toFixed(2)}</p>
+      </div>
+      <div className={`text-right ${stock.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+        <p className="font-bold">{stock.change >= 0 ? '+' : ''}{stock.change?.toFixed(2)}</p>
+        <p className="text-sm">{stock.change_percent?.toFixed(2)}%</p>
+      </div>
+    </div>
+  </motion.button>
+))
 
 export default function Dashboard({ token, onLogout }) {
   const [portfolioValue, setPortfolioValue] = useState(null)
@@ -17,7 +52,8 @@ export default function Dashboard({ token, onLogout }) {
 
   useEffect(() => {
     loadDashboardData()
-    const interval = setInterval(loadDashboardData, 30000)
+    // Reduced refresh rate to 60 seconds for better performance
+    const interval = setInterval(loadDashboardData, 60000)
     return () => clearInterval(interval)
   }, [])
 
@@ -50,20 +86,12 @@ export default function Dashboard({ token, onLogout }) {
       <nav className="bg-[#1a1f3a] border-b border-[#2d3561] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <motion.h1 
-              className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-            >
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
               AI Stock Trading Platform
-            </motion.h1>
+            </h1>
             <div className="flex items-center gap-4">
               {portfolioValue && (
-                <motion.div 
-                  className="flex items-center gap-2 bg-green-500/10 px-4 py-2 rounded-lg border border-green-500/30"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                >
+                <div className="flex items-center gap-2 bg-green-500/10 px-4 py-2 rounded-lg border border-green-500/30">
                   <Wallet className="w-5 h-5 text-green-400" />
                   <div>
                     <p className="text-xs text-gray-400">Total Value</p>
@@ -71,7 +99,7 @@ export default function Dashboard({ token, onLogout }) {
                       ${portfolioValue.total_value?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
-                </motion.div>
+                </div>
               )}
               <button
                 onClick={onLogout}
@@ -158,9 +186,17 @@ export default function Dashboard({ token, onLogout }) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            <StockChart symbol={selectedStock} />
-            <TradingPanel selectedStock={selectedStock} onTradeComplete={refreshData} />
-            <Predictions symbol={selectedStock} />
+            <Suspense fallback={<LoadingSkeleton height="h-80" />}>
+              <StockChart symbol={selectedStock} />
+            </Suspense>
+            
+            <Suspense fallback={<LoadingSkeleton height="h-64" />}>
+              <TradingPanel selectedStock={selectedStock} onTradeComplete={refreshData} />
+            </Suspense>
+            
+            <Suspense fallback={<LoadingSkeleton height="h-64" />}>
+              <Predictions symbol={selectedStock} />
+            </Suspense>
           </div>
 
           {/* Right Column */}
@@ -177,35 +213,21 @@ export default function Dashboard({ token, onLogout }) {
               </div>
               <div className="space-y-2">
                 {trendingStocks.slice(0, 8).map((stock, idx) => (
-                  <motion.button
+                  <TrendingStockButton
                     key={stock.symbol}
-                    onClick={() => setSelectedStock(stock.symbol)}
-                    className={`w-full p-3 rounded-lg text-left transition ${
-                      selectedStock === stock.symbol
-                        ? 'bg-blue-500/20 border-2 border-blue-500'
-                        : 'bg-[#0a0e27] hover:bg-[#2d3561] border border-[#2d3561]'
-                    }`}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.05 }}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-bold text-white">{stock.symbol}</p>
-                        <p className="text-sm text-gray-400">${stock.price?.toFixed(2)}</p>
-                      </div>
-                      <div className={`text-right ${stock.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        <p className="font-bold">{stock.change >= 0 ? '+' : ''}{stock.change?.toFixed(2)}</p>
-                        <p className="text-sm">{stock.change_percent?.toFixed(2)}%</p>
-                      </div>
-                    </div>
-                  </motion.button>
+                    stock={stock}
+                    isSelected={selectedStock === stock.symbol}
+                    onSelect={setSelectedStock}
+                    index={idx}
+                  />
                 ))}
               </div>
             </motion.div>
 
             {/* Portfolio */}
-            <Portfolio onRefresh={refreshData} />
+            <Suspense fallback={<LoadingSkeleton height="h-96" />}>
+              <Portfolio onRefresh={refreshData} />
+            </Suspense>
           </div>
         </div>
       </div>

@@ -12,8 +12,6 @@ export default function StockChart({ symbol }) {
 
   useEffect(() => {
     loadChartData()
-    const interval = setInterval(loadStockPrice, 30000)
-    return () => clearInterval(interval)
   }, [symbol])
 
   const loadStockPrice = async () => {
