@@ -28,6 +28,8 @@ export const stockAPI = {
   search: (query) => api.get(`/stocks/search?q=${query}`),
   getPrice: (symbol) => api.get(`/stocks/price/${symbol}`),
   getTrending: () => api.get('/stocks/trending'),
+  getGainers: () => api.get('/stocks/gainers'),
+  getLosers: () => api.get('/stocks/losers'),
 }
 
 export const portfolioAPI = {
@@ -41,6 +43,20 @@ export const portfolioAPI = {
 
 export const predictionAPI = {
   get: (symbol) => api.get(`/predictions/${symbol}`),
+}
+
+export const watchlistAPI = {
+  get: () => api.get('/watchlist'),
+  add: (symbol) => api.post('/watchlist/add', null, { params: { symbol } }),
+  remove: (id) => api.delete(`/watchlist/${id}`),
+  getAlerts: () => api.get('/watchlist/alerts'),
+  createAlert: (data) => api.post('/watchlist/alerts', null, { params: data }),
+  deleteAlert: (id) => api.delete(`/watchlist/alerts/${id}`)
+}
+
+export const newsAPI = {
+  getStockNews: (symbol) => api.get(`/stocks/${symbol}/news`),
+  getMarketNews: () => api.get('/stocks/market/news')
 }
 
 export default api

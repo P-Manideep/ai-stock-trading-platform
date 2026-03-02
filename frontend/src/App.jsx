@@ -10,11 +10,13 @@ function App() {
   const handleLogin = (newToken) => {
     localStorage.setItem('token', newToken)
     setToken(newToken)
+    window.location.href = '/dashboard'  // Force redirect
   }
 
   const handleLogout = () => {
     localStorage.removeItem('token')
     setToken(null)
+    window.location.href = '/login'  // Force redirect
   }
 
   return (
@@ -29,7 +31,7 @@ function App() {
         <Route path="/dashboard" element={
           token ? <Dashboard token={token} onLogout={handleLogout} /> : <Navigate to="/login" />
         } />
-        <Route path="/" element={<Navigate to="/dashboard" />} />
+        <Route path="/" element={<Navigate to={token ? "/dashboard" : "/login"} />} />
       </Routes>
     </BrowserRouter>
   )

@@ -2,7 +2,11 @@ import { useState, useEffect, lazy, Suspense, memo } from 'react'
 import { motion } from 'framer-motion'
 import { Toaster } from 'react-hot-toast'
 import { portfolioAPI, stockAPI } from '../services/api'
-import { TrendingUp, LogOut, Wallet, Activity, BarChart3 } from 'lucide-react'
+import { TrendingUp, LogOut, Wallet, Activity, BarChart3, User } from 'lucide-react'
+import UserProfile from './UserProfile'
+import Watchlist from './Watchlist'
+import NewsPanel from './NewsPanel'
+import MarketMovers from './MarketMovers'
 
 // Lazy load heavy components
 const Portfolio = lazy(() => import('./Portfolio'))
@@ -49,6 +53,14 @@ export default function Dashboard({ token, onLogout }) {
   const [selectedStock, setSelectedStock] = useState('AAPL')
   const [loading, setLoading] = useState(true)
   const [analytics, setAnalytics] = useState(null)
+  const [showProfile, setShowProfile] = useState(false)
+  const [currentUser, setCurrentUser] = useState({
+    username: 'Trader',
+    email: 'trader@example.com',
+    mobile: '+1234567890',
+    created_at: new Date(),
+    cash_balance: 10000
+  })
 
   useEffect(() => {
     loadDashboardData()
@@ -67,6 +79,12 @@ export default function Dashboard({ token, onLogout }) {
       setPortfolioValue(valueRes.data)
       setTrendingStocks(trendingRes.data.stocks || [])
       if (analyticsRes) setAnalytics(analyticsRes.data)
+      
+      // Update user cash balance
+      setCurrentUser(prev => ({
+        ...prev,
+        cash_balance: valueRes.data.cash_balance
+      }))
     } catch (error) {
       console.error('Error loading dashboard:', error)
     } finally {
@@ -91,7 +109,11 @@ export default function Dashboard({ token, onLogout }) {
             </h1>
             <div className="flex items-center gap-4">
               {portfolioValue && (
-                <div className="flex items-center gap-2 bg-green-500/10 px-4 py-2 rounded-lg border border-green-500/30">
+                <motion.div 
+                  className="flex items-center gap-2 bg-green-500/10 px-4 py-2 rounded-lg border border-green-500/30"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                >
                   <Wallet className="w-5 h-5 text-green-400" />
                   <div>
                     <p className="text-xs text-gray-400">Total Value</p>
@@ -99,8 +121,19 @@ export default function Dashboard({ token, onLogout }) {
                       ${portfolioValue.total_value?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
-                </div>
+                </motion.div>
               )}
+              
+              {/* Profile Button */}
+              <button
+                onClick={() => setShowProfile(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 border border-blue-500/30 transition"
+              >
+                <User className="w-5 h-5" />
+                Profile
+              </button>
+              
+              {/* Logout Button */}
               <button
                 onClick={onLogout}
                 className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 border border-red-500/30 transition"
@@ -224,13 +257,39 @@ export default function Dashboard({ token, onLogout }) {
               </div>
             </motion.div>
 
+            {/* Watchlist */}
+            <Suspense fallback={<LoadingSkeleton height="h-64" />}>
+              <Watchlist />
+            </Suspense>
+
             {/* Portfolio */}
             <Suspense fallback={<LoadingSkeleton height="h-96" />}>
               <Portfolio onRefresh={refreshData} />
             </Suspense>
           </div>
         </div>
+
+        {/* Bottom Section - Full Width */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          {/* News Panel */}
+          <Suspense fallback={<LoadingSkeleton height="h-96" />}>
+            <NewsPanel symbol={selectedStock} />
+          </Suspense>
+
+          {/* Market Movers */}
+          <Suspense fallback={<LoadingSkeleton height="h-96" />}>
+            <MarketMovers />
+          </Suspense>
+        </div>
       </div>
+
+      {/* User Profile Modal */}
+      {showProfile && (
+        <UserProfile 
+          user={currentUser} 
+          onClose={() => setShowProfile(false)} 
+        />
+      )}
     </div>
   )
 }

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { authAPI } from '../services/api'
+import { Loader, TrendingUp } from 'lucide-react'
 
 export default function Register({ onLogin }) {
   const [formData, setFormData] = useState({
@@ -10,8 +12,6 @@ export default function Register({ onLogin }) {
     password: '',
     confirmPassword: ''
   })
-  const [step, setStep] = useState('register') // 'register' or 'verify'
-  const [otpCode, setOtpCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -38,14 +38,22 @@ export default function Register({ onLogin }) {
     setLoading(true)
 
     try {
-      const response = await authAPI.register({
+      await authAPI.register({
         username: formData.username,
         email: formData.email || null,
         mobile: formData.mobile || null,
         password: formData.password
       })
-      setMessage(response.data.message)
-      setStep('verify')
+      
+      setMessage('Registration successful! Logging you in...')
+      
+      setTimeout(async () => {
+        const loginResponse = await authAPI.login({
+          identifier: formData.username,
+          password: formData.password
+        })
+        onLogin(loginResponse.data.access_token)
+      }, 1000)
     } catch (err) {
       setError(err.response?.data?.detail || 'Registration failed')
     } finally {
@@ -53,187 +61,132 @@ export default function Register({ onLogin }) {
     }
   }
 
-  const handleVerifyOTP = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-
-    try {
-      await authAPI.verifyOTP({
-        identifier: formData.email || formData.mobile,
-        otp_code: otpCode
-      })
-      setMessage('Verification successful! Logging you in...')
-      // Auto-login after verification
-      const loginResponse = await authAPI.login({
-        identifier: formData.username,
-        password: formData.password
-      })
-      onLogin(loginResponse.data.access_token)
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Verification failed')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleResendOTP = async () => {
-    setLoading(true)
-    try {
-      await authAPI.resendOTP({
-        identifier: formData.email || formData.mobile,
-        otp_type: formData.email ? 'email' : 'mobile'
-      })
-      setMessage('OTP resent successfully')
-    } catch (err) {
-      setError('Failed to resend OTP')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-2">Create Account</h1>
-        <p className="text-gray-600 text-center mb-6">
-          {step === 'register' ? 'Sign up to start trading' : 'Verify your account'}
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27] flex items-center justify-center p-4">
+      <motion.div 
+        className="glass rounded-2xl shadow-2xl p-8 w-full max-w-md border border-[#2d3561]"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="text-center mb-8">
+          <motion.div 
+            className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mb-4"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          >
+            <TrendingUp className="w-8 h-8 text-white" />
+          </motion.div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+            Create Account
+          </h1>
+          <p className="text-gray-700 mt-2">Start trading with $10,000</p>
+        </div>
 
-        {step === 'register' ? (
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Username</label>
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                required
-              />
-            </div>
+        <form onSubmit={handleRegister} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-800">Username</label>
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              className="w-full px-4 py-3 bg-[#0a0e27] border border-[#2d3561] rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+              required
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Email (Optional)</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-800">Email (Optional)</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full px-4 py-3 bg-[#0a0e27] border border-[#2d3561] rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Mobile (Optional)</label>
-              <input
-                type="tel"
-                name="mobile"
-                value={formData.mobile}
-                onChange={handleChange}
-                placeholder="+1234567890"
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-800">Mobile (Optional)</label>
+            <input
+              type="tel"
+              name="mobile"
+              value={formData.mobile}
+              onChange={handleChange}
+              placeholder="+1234567890"
+              className="w-full px-4 py-3 bg-[#0a0e27] border border-[#2d3561] rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Password</label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                required
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-800">Password</label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              className="w-full px-4 py-3 bg-[#0a0e27] border border-[#2d3561] rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+              required
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Confirm Password</label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                required
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-800">Confirm Password</label>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className="w-full px-4 py-3 bg-[#0a0e27] border border-[#2d3561] rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+              required
+            />
+          </div>
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                {error}
-              </div>
-            )}
-
-            {message && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
-                {message}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 disabled:bg-gray-400"
+          {error && (
+            <motion.div 
+              className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
             >
-              {loading ? 'Creating Account...' : 'Register'}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleVerifyOTP} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Enter OTP</label>
-              <input
-                type="text"
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value)}
-                placeholder="Enter 6-digit code"
-                maxLength="6"
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 text-center text-2xl tracking-widest"
-                required
-              />
-            </div>
+              {error}
+            </motion.div>
+          )}
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                {error}
-              </div>
-            )}
-
-            {message && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
-                {message}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 disabled:bg-gray-400"
+          {message && (
+            <motion.div 
+              className="bg-green-500/10 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
             >
-              {loading ? 'Verifying...' : 'Verify OTP'}
-            </button>
+              {message}
+            </motion.div>
+          )}
 
-            <button
-              type="button"
-              onClick={handleResendOTP}
-              disabled={loading}
-              className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300"
-            >
-              Resend OTP
-            </button>
-          </form>
-        )}
+          <motion.button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-700 disabled:opacity-50 transition shadow-lg flex items-center justify-center gap-2"
+            whileHover={{ scale: loading ? 1 : 1.02 }}
+            whileTap={{ scale: loading ? 1 : 0.98 }}
+          >
+            {loading ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                Creating Account...
+              </>
+            ) : (
+              'Register'
+            )}
+          </motion.button>
+        </form>
 
-        <p className="text-center mt-4 text-sm text-gray-600">
+        <p className="text-center mt-6 text-sm text-gray-700">
           Already have an account?{' '}
-          <Link to="/login" className="text-purple-600 hover:underline">
+          <Link to="/login" className="text-purple-400 hover:text-purple-300 font-semibold transition">
             Login
           </Link>
         </p>
-      </div>
+      </motion.div>
     </div>
   )
 }

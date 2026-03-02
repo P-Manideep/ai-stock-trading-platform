@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts'
 import { motion } from 'framer-motion'
-import { stockAPI } from '../services/api'
-import { Activity, TrendingUp, TrendingDown } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { stockAPI, watchlistAPI } from '../services/api'
+import { Activity, TrendingUp, TrendingDown, Star } from 'lucide-react'
 
 export default function StockChart({ symbol }) {
   const [data, setData] = useState([])
@@ -56,6 +57,29 @@ export default function StockChart({ symbol }) {
     return data
   }
 
+  const addToWatchlist = async () => {
+    try {
+      await watchlistAPI.add(symbol)
+      toast.success(`${symbol} added to watchlist!`, {
+        icon: '⭐',
+        style: {
+          background: '#1a1f3a',
+          color: '#fff',
+          border: '1px solid #eab308'
+        }
+      })
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || 'Failed to add to watchlist'
+      toast.error(errorMsg, {
+        style: {
+          background: '#1a1f3a',
+          color: '#fff',
+          border: '1px solid #ef4444'
+        }
+      })
+    }
+  }
+
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       return (
@@ -103,20 +127,32 @@ export default function StockChart({ symbol }) {
           </div>
         </div>
         
-        <div className="flex gap-2">
-          {['1D', '1W', '1M', '3M', '1Y'].map((tf) => (
-            <button
-              key={tf}
-              onClick={() => setTimeframe(tf)}
-              className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
-                timeframe === tf
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-[#0a0e27] text-gray-400 hover:bg-[#2d3561]'
-              }`}
-            >
-              {tf}
-            </button>
-          ))}
+        <div className="flex items-center gap-3">
+          {/* Watchlist Button */}
+          <button
+            onClick={addToWatchlist}
+            className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 text-yellow-400 rounded-lg hover:bg-yellow-500/20 border border-yellow-500/30 transition"
+          >
+            <Star className="w-5 h-5" />
+            <span className="hidden md:inline">Add to Watchlist</span>
+          </button>
+
+          {/* Timeframe Buttons */}
+          <div className="flex gap-2">
+            {['1D', '1W', '1M', '3M', '1Y'].map((tf) => (
+              <button
+                key={tf}
+                onClick={() => setTimeframe(tf)}
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
+                  timeframe === tf
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-[#0a0e27] text-gray-400 hover:bg-[#2d3561]'
+                }`}
+              >
+                {tf}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       

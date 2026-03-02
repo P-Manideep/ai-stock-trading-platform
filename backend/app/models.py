@@ -68,3 +68,26 @@ class StockPrediction(Base):
     confidence = Column(Float, nullable=False)
     trend = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+class Watchlist(Base):
+    __tablename__ = "watchlist"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    symbol = Column(String, nullable=False)
+    added_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User")
+
+class PriceAlert(Base):
+    __tablename__ = "price_alerts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    symbol = Column(String, nullable=False)
+    target_price = Column(Float, nullable=False)
+    condition = Column(String, nullable=False)  # 'above' or 'below'
+    is_active = Column(Boolean, default=True)
+    triggered = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User")

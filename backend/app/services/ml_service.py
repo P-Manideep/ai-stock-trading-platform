@@ -116,9 +116,12 @@ def get_buy_sell_signal(rsi, macd_data, bb_data, current_price):
 def predict_stock_price(symbol: str, days_ahead: int = 7):
     """Enhanced prediction with technical analysis"""
     try:
+        from .stock_service import get_stock_history
+        
         history = get_stock_history(symbol, period="3mo")
         
         if history is None or len(history) < 30:
+            print(f"Not enough data for {symbol}")
             return None
         
         prices = history['Close'].values
@@ -173,6 +176,8 @@ def predict_stock_price(symbol: str, days_ahead: int = 7):
         
     except Exception as e:
         print(f"Prediction error for {symbol}: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def get_portfolio_analytics(holdings_data):

@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from .routes import auth_routes, stock_routes, portfolio_routes, prediction_routes, admin_routes
+from .routes import auth_routes, stock_routes, portfolio_routes, prediction_routes, admin_routes, watchlist_routes
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -24,6 +26,8 @@ app.include_router(stock_routes.router, prefix="/stocks", tags=["Stocks"])
 app.include_router(portfolio_routes.router, prefix="/portfolio", tags=["Portfolio"])
 app.include_router(prediction_routes.router, prefix="/predictions", tags=["Predictions"])
 app.include_router(admin_routes.router, prefix="/admin", tags=["Admin"])
+app.include_router(watchlist_routes.router, prefix="/watchlist", tags=["Watchlist"])
+
 
 @app.get("/")
 def root():
